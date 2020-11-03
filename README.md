@@ -46,7 +46,7 @@ dataset/
 ```bash 
 $ python train.py
 ```
-![image](https://github.com/ivanwhaf/FRS-pytorch/blob/master/visualization/batch0.png)
+![image](https://github.com/ivanwhaf/FRS-pytorch/blob/master/visualize/batch0.png)
 
 ## Caution
 * Need plotting model structure? Just install `graphviz` first
