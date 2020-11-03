@@ -1,114 +1,24 @@
 # @Author: Ivan
-# @Time: 2020/9/25
-import os
+# @Time: 2020/11/3
 import time
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
-from torch import nn
-from torch.autograd import Variable
-from torch.utils.data import DataLoader
-from torch.utils.data.dataset import Dataset
-import torchvision
-from torchvision import datasets, transforms, utils
+from torchvision import utils
 import matplotlib.pyplot as plt
-import cv2
-import numpy as np
-from PIL import Image
 from models import Net
-from util import load_classes
+from utils.datasets import create_dataloader
+from utils.util import create_model
 
-epochs = 120  # number of training
-root = './dataset'
-nb_classes = 5
-nb_per_class = 200
-batch_size = 64
-learning_rate = 0.001
-train_proportion = 0.8  # proportion of train set
-valid_proportion = 0.1  # proportion of valid set
-test_proportion = 0.1  # proportion of test set
-width, height = 100, 100
-
-
-class MyDataset(Dataset):
-    def __init__(self, root, type='train', transforms=None):
-        classes = load_classes('./cfg/classes.cfg')  # load class-index dict
-        img_classes = os.listdir(root)  # class name list
-        dataset = []
-        label = []
-        train_per_class = int(train_proportion * nb_per_class)
-        valid_per_class = int(valid_proportion * nb_per_class)
-        test_per_class = int(test_proportion * nb_per_class)
-
-        for img_class in img_classes[:nb_classes]:
-            dataset_t = []
-            label_t = []
-            img_class_path = os.path.join(root, img_class)
-
-            imgs = os.listdir(img_class_path)
-            for img in imgs[:nb_per_class]:
-                img_path = os.path.join(img_class_path, img)
-                dataset_t.append(img_path)
-                label_t.append(
-                    [idx for idx in classes if classes[idx] == img_class][0])
-            if type == 'train':
-                print(img_class)
-                dataset_t = dataset_t[:train_per_class]
-                label_t = label_t[:train_per_class]
-            elif type == 'val':
-                dataset_t = dataset_t[train_per_class:train_per_class +
-                                      valid_per_class]
-                label_t = label_t[train_per_class:train_per_class +
-                                  valid_per_class]
-            elif type == 'test':
-                dataset_t = dataset_t[train_per_class + valid_per_class:]
-                label_t = label_t[train_per_class + valid_per_class:]
-
-            dataset.extend(dataset_t)
-            label.extend(label_t)
-
-        self.dataset = dataset
-        self.label = label
-        self.transforms = transforms
-
-    def __getitem__(self, index):
-        img_path = self.dataset[index]
-        # img = cv2.imdecode(np.fromfile(
-        #     img_path, dtype=np.uint8), cv2.IMREAD_COLOR)
-        img = Image.open(img_path).convert('RGB')  # must convert to RGB!
-        label = self.label[index]
-        if self.transforms is not None:
-            img = self.transforms(img)
-        return img, torch.tensor(label)
-
-    def __len__(self):
-        return len(self.dataset)
-
-
-def load_dataset():
-    transform = transforms.Compose([
-        transforms.Resize((width, height)),
-        # transforms.RandomRotation(10),
-        # transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
-    ])
-    train_dataset = MyDataset(root, type='train', transforms=transform)
-    val_dataset = MyDataset(root, type='val', transforms=transform)
-    test_dataset = MyDataset(root, type='test', transforms=transform)
-
-    train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(
-        val_dataset, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False)
-
-    return train_loader, val_loader, test_loader
+EPOCHS = 200
+DATASET_PATH = './dataset'
+BATCH_SIZE = 8
+LEARNING_RATE = 0.005
+CFG_PATH = 'cfg/frs.cfg'
 
 
 def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_acc_lst):
-    model.train()  # Sets the module in training mode
+    model.train()  # Set the module in training mode
     correct = 0
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         inputs, labels = inputs.to(device), labels.to(device)
@@ -192,17 +102,18 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # load datasets
-    train_loader, val_loader, test_loader = load_dataset()
+    train_loader, val_loader, test_loader = create_dataloader(
+        'IMAGE_FOLDER', DATASET_PATH, BATCH_SIZE, CFG_PATH)
 
-    net = Net(nb_classes).to(device)
+    net = create_model(CFG_PATH).to(device)  # init a model
 
-    optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9)
+    optimizer = optim.SGD(net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
     train_loss_lst = []
     val_loss_lst = []
     train_acc_lst = []
     val_acc_lst = []
-    for epoch in range(epochs):
+    for epoch in range(EPOCHS):
         train_loss_lst, train_acc_lst = train(net, train_loader, optimizer,
                                               epoch, device, train_loss_lst, train_acc_lst)
         val_loss_lst, val_acc_lst = validate(
@@ -212,18 +123,17 @@ if __name__ == "__main__":
 
     # plot loss and accuracy
     fig = plt.figure()
-    plt.plot(range(epochs), train_loss_lst, 'g', label='train loss')
-    plt.plot(range(epochs), val_loss_lst, 'k', label='val loss')
-    plt.plot(range(epochs), train_acc_lst, 'r', label='train acc')
-    plt.plot(range(epochs), val_acc_lst, 'b', label='val acc')
+    plt.plot(range(EPOCHS), train_loss_lst, 'g', label='train loss')
+    plt.plot(range(EPOCHS), val_loss_lst, 'k', label='val loss')
+    plt.plot(range(EPOCHS), train_acc_lst, 'r', label='train acc')
+    plt.plot(range(EPOCHS), val_acc_lst, 'b', label='val acc')
     plt.grid(True)
     plt.xlabel('epoch')
     plt.ylabel('acc-loss')
     plt.legend(loc="upper right")
     now = time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(time.time()))
-    plt.savefig('./parameter/' + now + '.jpg')
+    plt.savefig('./visualize/parameter/' + now + '.jpg')
     plt.show()
 
     # save model
-    # torch.save(net, "frs_cnn.pth")
-    torch.save(net.state_dict(), "frs_cnn.pth")
+    torch.save(net.state_dict(), "weights/frs_cnn.pth")

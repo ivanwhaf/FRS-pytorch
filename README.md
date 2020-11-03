@@ -3,54 +3,69 @@ Food Recognition System using pytorch deep learning framwork
 * Deep Learning based food recognition system,using `Pytorch` deep learning framwork
 * Also can be transplanted to other platforms like `Raspberry Pi`
 
+# Demo
+## 1.Run demo directly
+cam_demo.py runs to show a UI and recongnize the food
+```bash
+$ python cam_demo.py
+```
+
+## 2.Run in command line
+detect.py runs inference on a variety of sources, cd your project path and type:
+```bash
+$ python detect.py --source 0  # webcam
+                            file.jpg  # image 
+                            file.mp4  # video
+                            path/*.jpg # path of image
+                            path/*.mp4 # path of video
+```
+
 # Usage
 ## Preparation
-* 1.run spiders`spider_baidu.py` or `spider_douguo.py` to crawl raw image data from the internet
-* 2.create an empty folder and move raw images into it,in this project was `dataset` folder
-* 3.run `train.py` to train the model (only when dataset was downloaded)
+* 1.create an empty folder (in this project was `dataset` folder) as your dataset folder
+* 2.prepare your own datasets, or you can run spiders`spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
+* 3.move your raw image data into dataset folder, dataset folder contain several child folders, each
+child folder represents each class, for example your dataset folder should be like this:
+```
+dataset/
+  ├──tomtato
+  |   ├──001.png
+  |   ├──002.png
+  |   └──003.jpg
+  └──potato  
+      ├──001.png
+      ├──002.png
+      └──003.jpg
+```
 
-## Run directly
-* run `cam_demo.py` to show ui,load the model and recongnize the food
-
-## Run in command line
-cd your project path and type:
-* `python detect.py -i test.jpg`
-* `python detect.py -v test.mp4`
+## Train
+* Create a empty config file *xxx.cfg* in cfg directory(this repo was *cfg/frs.cfg*), then imitate cfg/frs.cfg and edit the config, set *nb_class* according to your class number (this repo NB_CLASS=10)
+* Modify *learning rate*, *batch_size* and other hyper parameters depend on actual situations
+* You can also customize your own model in models.py
+* Run train.py to train your own model(only when dataset was prepared):
+```bash 
+$ python train.py
+```
+![image](https://github.com/ivanwhaf/FRS-pytorch/blob/master/visualization/batch0.png)
 
 ## Caution
-* need plotting model structure? just install `graphviz` first
-* please screen out unqualified raw images manually after crawling
+* Need plotting model structure? Just install `graphviz` first
+* Please screen out unqualified raw images manually when making dataset
 
-# Program Structure
-## Training module
-* file:`train.py`
-* main training program
-
-## Utils module
-* file:`util.py`
-* some dataset utils function
-
-## UI and Predicting module
-* file:`cam_demo.py`,`detect.py`
-* user interface,just to predict image,using pyqt5
-
-## Image Spiders module
-* folder: spiders 
-* file: `spider_baidu.py` , `spider_douguo.py`
-* use spiders to crawl raw images from the internet
+# Program Structure Introduction
+* cfg: contain some config files
+* data: some samples and misc files
+* dataset: your own dataset path
+* spiders: contain two python spiders for downloading images
+* utils: some util and kernel files
+* visualize: save model visulization result
+* weights: save model weights
 
 # Requirements
+Python 3.X version with all [requirements.txt](https://github.com/ivanwhaf/FRS-pytorch/blob/master/requirements.txt) dependencies installed, including `torch>=1.2`. To install run:
 ```bash
 $ pip install -r requirements.txt
 ```
-
-# Dependency
-* pytorch-gpu
-* numpy
-* opencv-python
-* pillow
-* matplotlib (used to show parameter change)
-* pyqt5
 
 # Environment
 ## PC Ⅰ
@@ -58,6 +73,6 @@ $ pip install -r requirements.txt
 * Python 3.7.8
 * CUDA 10.0
 * cuDNN 7.4
-* Pytorch+gpu 1.2.0
-* PyQt5 5.15.0
+* torch 1.2.0
+* pyqt5 5.15.0
 * Nvidia MX350 2G
