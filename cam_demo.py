@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QPushButton, QApplication, QLabel, QMainWindow
 from PyQt5.QtGui import QPixmap, QImage, QFont
 from PyQt5.QtCore import Qt, QTimer
 from detect import predict_class_name_and_confidence
-from utils.util import load_pytorch_model, load_prices
+from utils.util import load_pytorch_model, load_prices, parse_cfg
 
 
 # camera shape
@@ -55,7 +55,10 @@ class MyWindow(QMainWindow):
         confirm_button.resize(130, 40)
         confirm_button.clicked.connect(self.confirm)  # Confirm Button
 
-        self.model = load_pytorch_model('weights/frs_cnn.pth','cfg/frs.cfg')
+        cfg = parse_cfg('cfg/frs.cfg')
+        nb_class, input_size = int(cfg['nb_class']), int(cfg['input_size'])
+        self.model = load_pytorch_model(
+            'weights/frs_cnn.pth', nb_class, input_size)
         self.prices = load_prices('cfg/prices.cfg')
 
         # camera init

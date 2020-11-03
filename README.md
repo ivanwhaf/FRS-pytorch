@@ -22,9 +22,9 @@ $ python detect.py --source 0  # webcam
 
 # Usage
 ## Preparation
-* 1.create an empty folder (in this project was `dataset` folder) as your dataset folder
-* 2.prepare your own datasets, or you can run spiders`spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
-* 3.move your raw image data into dataset folder, dataset folder contain several child folders, each
+* 1.Create an empty folder (in this project was `dataset` folder) as your dataset folder
+* 2.Prepare your own datasets, or you can run spiders`spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
+* 3.Move your raw image data into dataset folder, dataset folder contain several child folders, each
 child folder represents each class, for example your dataset folder should be like this:
 ```
 dataset/
@@ -39,10 +39,10 @@ dataset/
 ```
 
 ## Train
-* Create a empty config file *xxx.cfg* in cfg directory(this repo was *cfg/frs.cfg*), then imitate cfg/frs.cfg and edit the config, set *nb_class* according to your class number (this repo NB_CLASS=10)
-* Modify *learning rate*, *batch_size* and other hyper parameters depend on actual situations
-* You can also customize your own model in models.py
-* Run train.py to train your own model(only when dataset was prepared):
+* 1.Create a empty config file *xxx.cfg* in cfg directory(this repo was *cfg/frs.cfg*), then imitate *cfg/frs.cfg* and edit the config, set *nb_class* according to your class number (this repo nb_class=10)
+* 2.Modify *learning rate*, *batch_size* and other hyper parameters depend on actual situations
+* 3.You can also customize your own model in models.py
+* 4.Run train.py to train your own model(only when dataset was prepared):
 ```bash 
 $ python train.py
 ```

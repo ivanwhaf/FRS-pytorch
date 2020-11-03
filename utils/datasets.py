@@ -20,15 +20,7 @@ TEST_PROPORTION = 0.1  # proportion of test set
 # NB_PER_CLASS = 200
 
 
-def create_dataset(model, root, cfg_path):
-    input_size = None
-    with open(cfg_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-        for line in lines:
-            line = line.strip().split(' ')
-            if line[0] == 'input_size':
-                input_size = int(line[1])
-
+def create_dataset(model, root, input_size):
     transform = transforms.Compose([
         transforms.Resize((input_size, input_size)),
         transforms.RandomRotation(10),
@@ -44,7 +36,7 @@ def create_dataset(model, root, cfg_path):
             for k in dataset.class_to_idx:
                 f.write(k+' '+str(dataset.class_to_idx[k])+'\n')
 
-        print(len(dataset.imgs))
+        print('total number',len(dataset.imgs))
         dataset_size = len(dataset)
         train_size = int(dataset_size*TRAIN_PROPORTION)
         val_size = int(dataset_size*VAL_PROPORTION)
@@ -60,13 +52,13 @@ def create_dataset(model, root, cfg_path):
     return train_dataset, val_dataset, test_dataset
 
 
-def create_dataloader(model, root, batch_size, cfg_path):
+def create_dataloader(model, root, batch_size, input_size):
     if model == 'IMAGE_FOLDER':
         train_dataset, val_dataset, test_dataset = create_dataset(
-            model='IMAGE_FOLDER', root=root, cfg_path=cfg_path)
+            model='IMAGE_FOLDER', root=root, input_size=input_size)
     elif model == 'MY':
         train_dataset, val_dataset, test_dataset = create_dataset(
-            model='MY', root=root, cfg_path=cfg_path)
+            model='MY', root=root, input_size=input_size)
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True)

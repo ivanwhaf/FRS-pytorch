@@ -162,6 +162,9 @@ def arg_parse():
     parser.add_argument("--source", "-s", dest='source', default="data/samples/test.jpg",
                         help="Path of your input file source,0 for webcam", type=str)
 
+    parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
+                        help="Your config file path", type=str)
+
     return parser.parse_args()
 
 
@@ -169,11 +172,15 @@ if __name__ == "__main__":
     args = arg_parse()
     model_path = args.model
     source = args.source
+    
+    cfg = parse_cfg(args.cfg)
 
-    model = load_pytorch_model(model_path)
+    nb_class, input_size = int(cfg['nb_class']), int(cfg['input_size'])
+
+    model = load_pytorch_model(model_path, nb_class, input_size)
     print('Model successfully loaded!')
 
-    if source.split('.')[-1] in ['jpg', 'png', 'jpeg', 'bmp', 'tif', 'gif']:
+    if source.split('.')[-1] in ['jpg', 'png', 'jpeg', 'bmp', 'tif', 'tiff', 'gif']:
         img = cv2.imread(image_path)
         class_name, confidence = predict_and_show_one_img(img, model)
         print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
