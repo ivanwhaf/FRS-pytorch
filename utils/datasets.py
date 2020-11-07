@@ -21,10 +21,12 @@ TEST_PROPORTION = 0.1  # proportion of test set
 
 
 def create_dataset(model, root, input_size):
+    # Image enhancement
     transform = transforms.Compose([
         transforms.Resize((input_size, input_size)),
-        transforms.RandomRotation(10),
+        transforms.RandomRotation(45),
         transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
     ])
@@ -36,7 +38,7 @@ def create_dataset(model, root, input_size):
             for k in dataset.class_to_idx:
                 f.write(k+' '+str(dataset.class_to_idx[k])+'\n')
 
-        print('total number',len(dataset.imgs))
+        print('total number', len(dataset.imgs))
         dataset_size = len(dataset)
         train_size = int(dataset_size*TRAIN_PROPORTION)
         val_size = int(dataset_size*VAL_PROPORTION)

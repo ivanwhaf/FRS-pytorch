@@ -3,16 +3,14 @@ import cv2
 from torchvision import transforms
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from utils.util import load_classes, load_pytorch_model
+from utils.util import load_classes, parse_cfg
+from models import build_model
 
 # camera shape
 CAM_WIDTH, CAM_HEIGHT = 848, 480
 
-# input image shape
-IMG_WIDTH, IMG_HEIGHT = 100, 100
 
-
-def predict_img(img, model):
+def predict_img(img, model, input_size):
     """get model prediction of one image
 
     Args:
@@ -25,7 +23,7 @@ def predict_img(img, model):
     img = Image.fromarray(img).convert('RGB')
 
     transform = transforms.Compose([
-        transforms.Resize((IMG_WIDTH, IMG_HEIGHT)),
+        transforms.Resize((input_size, input_size)),
         transforms.ToTensor(),
         # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
     ])
@@ -36,7 +34,7 @@ def predict_img(img, model):
     return output
 
 
-def predict_class_idx_and_confidence(img, model):
+def predict_class_idx_and_confidence(img, model, input_size):
     """predict image class and confidence according to trained model
 
     Args:
@@ -47,7 +45,7 @@ def predict_class_idx_and_confidence(img, model):
         confidence: class confidence
     """
     # call base prediction function
-    output = predict_img(img, model)
+    output = predict_img(img, model, input_size)
     class_idx = output.max(1)[1]
     confidence = output.max(1)[0]
 
@@ -60,7 +58,7 @@ def predict_class_idx_and_confidence(img, model):
 classes = load_classes('cfg/classes.cfg')
 
 
-def predict_class_name_and_confidence(img, model):
+def predict_class_name_and_confidence(img, model, input_size):
     """predict image class and confidence according to trained model
 
     Args:
@@ -70,13 +68,14 @@ def predict_class_name_and_confidence(img, model):
         class_name: class index
         confidence: class confidence
     """
-    class_idx, confidence = predict_class_idx_and_confidence(img, model)
+    class_idx, confidence = predict_class_idx_and_confidence(
+        img, model, input_size)
     class_name = classes[int(class_idx)]
 
     return class_name, confidence
 
 
-def predict_and_show_one_img(img, model):
+def predict_and_show_one_img(img, model, input_size):
     """get model output of one image
 
     Args:
@@ -86,12 +85,14 @@ def predict_and_show_one_img(img, model):
         class_name: class name
         confidence: class confidence
     """
-    class_name, confidence = predict_class_name_and_confidence(img, model)
+    class_name, confidence = predict_class_name_and_confidence(
+        img, model, input_size)
 
     img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    font_text = ImageFont.truetype("data/simsun.ttc", 26, encoding="utf-8")
-    draw.text((5, 5), class_name, (0, 255, 0), font=font_text)
+    font_text = ImageFont.truetype("data/simsun.ttc", 22, encoding="utf-8")
+    draw.text((5, 5), class_name + ' ' + str(confidence) +
+              '%', (0, 255, 0), font=font_text)
 
     img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
@@ -104,9 +105,10 @@ def predict_and_show_one_img(img, model):
     return class_name, confidence
 
 
-def cv_loop():
+def cv_loop(weight_path, cfg):
     # loop get camera frame and show on window
-    model = load_pytorch_model('weights/frs_cnn.pth')
+    model = build_model(weight_path, cfg)
+    input_size = int(cfg['input_size'])
 
     cap = cv2.VideoCapture(0)
     cap.set(3, CAM_WIDTH)
@@ -122,7 +124,7 @@ def cv_loop():
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         class_name, confidence = predict_class_name_and_confidence(
-            img, model)
+            img, model, input_size)
 
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(img)
@@ -156,8 +158,8 @@ def arg_parse():
     # parser.add_argument("--video", "-v", dest='video', default='data/samples/test.mp4',
     #                     help="Path of video to run detection upon", type=str)
 
-    parser.add_argument("--model", "-m", dest='model', default="weights/frs_cnn.pth",
-                        help="Path of network model", type=str)
+    parser.add_argument("--weight", "-w", dest='weight', default="weights/frs_cnn.pth",
+                        help="Path of model weight", type=str)
 
     parser.add_argument("--source", "-s", dest='source', default="data/samples/test.jpg",
                         help="Path of your input file source,0 for webcam", type=str)
@@ -170,22 +172,22 @@ def arg_parse():
 
 if __name__ == "__main__":
     args = arg_parse()
-    model_path = args.model
+    weight_path = args.weight
     source = args.source
-    
+
     cfg = parse_cfg(args.cfg)
+    input_size = int(cfg['input_size'])
 
-    nb_class, input_size = int(cfg['nb_class']), int(cfg['input_size'])
-
-    model = load_pytorch_model(model_path, nb_class, input_size)
+    model = build_model(weight_path, cfg)
     print('Model successfully loaded!')
 
     if source.split('.')[-1] in ['jpg', 'png', 'jpeg', 'bmp', 'tif', 'tiff', 'gif']:
-        img = cv2.imread(image_path)
-        class_name, confidence = predict_and_show_one_img(img, model)
+        img = cv2.imread(source)
+        class_name, confidence = predict_and_show_one_img(
+            img, model, input_size)
         print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
     elif source.split('.')[-1] in ['mp4', 'avi', 'mkv', 'flv', 'rmvb', 'mov', 'rm']:
-        cap = cv2.VideoCapture(video_path)
+        cap = cv2.VideoCapture(source)
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
@@ -193,7 +195,7 @@ if __name__ == "__main__":
                 break
 
             class_name, confidence = predict_class_name_and_confidence(
-                frame, model)
+                frame, model, input_size)
 
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img)
@@ -224,7 +226,7 @@ if __name__ == "__main__":
 
             img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             class_name, confidence = predict_class_name_and_confidence(
-                img, model)
+                img, model, input_size)
 
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img)

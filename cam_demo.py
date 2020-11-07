@@ -1,19 +1,17 @@
 import sys
 import cv2
+import argparse
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from PyQt5.QtWidgets import QPushButton, QApplication, QLabel, QMainWindow
 from PyQt5.QtGui import QPixmap, QImage, QFont
 from PyQt5.QtCore import Qt, QTimer
 from detect import predict_class_name_and_confidence
-from utils.util import load_pytorch_model, load_prices, parse_cfg
-
+from utils.util import load_prices, parse_cfg
+from models import build_model
 
 # camera shape
 CAM_WIDTH, CAM_HEIGHT = 848, 480
-
-# window shape
-WINDOW_WIDTH, WINDOW_HEIGHT = 1600, 1200
 
 
 class MyWindow(QMainWindow):
@@ -21,7 +19,7 @@ class MyWindow(QMainWindow):
     customized Qt window
     """
 
-    def __init__(self):
+    def __init__(self, weight_path, cfg):
         super().__init__()
         self.setGeometry(500, 300, CAM_WIDTH, CAM_HEIGHT + 150)
         self.setFixedSize(CAM_WIDTH, CAM_HEIGHT + 150)
@@ -42,6 +40,9 @@ class MyWindow(QMainWindow):
         self.price_label.setText("金额：")
         self.price_label.setFont(QFont("Roman times", 16, QFont.Bold))
 
+        self.statusbar = self.statusBar()  # 创建状态栏
+        self.statusbar.showMessage("Ready!")  # 显示消息
+
         self.frame = None
         self.isChecking = False
 
@@ -55,10 +56,9 @@ class MyWindow(QMainWindow):
         confirm_button.resize(130, 40)
         confirm_button.clicked.connect(self.confirm)  # Confirm Button
 
-        cfg = parse_cfg('cfg/frs.cfg')
-        nb_class, input_size = int(cfg['nb_class']), int(cfg['input_size'])
-        self.model = load_pytorch_model(
-            'weights/frs_cnn.pth', nb_class, input_size)
+        self.cfg = cfg
+        self.model = build_model(
+            weight_path, self.cfg)
         self.prices = load_prices('cfg/prices.cfg')
 
         # camera init
@@ -79,7 +79,9 @@ class MyWindow(QMainWindow):
             return
 
         ret, self.frame = self.cap.read()  # read camera frame
-        print('frame shape:', self.frame.shape)
+        # print('frame shape:', self.frame.shape)
+        self.statusbar.showMessage(
+            'frame shape: '+str(self.frame.shape))  # 显示消息
         frame = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
         h, w = frame.shape[:2]
         img = QImage(frame, w, h, QImage.Format_RGB888)
@@ -94,7 +96,7 @@ class MyWindow(QMainWindow):
         frame = self.frame
 
         class_name, confidence = predict_class_name_and_confidence(
-            frame, self.model)
+            frame, self.model, int(self.cfg['input_size']))
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         img = Image.fromarray(img)  # ndarray to pil Image
@@ -105,7 +107,9 @@ class MyWindow(QMainWindow):
         img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-        print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+        # print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+        self.statusbar.showMessage(
+            'Class name: '+class_name+' Confidence: '+str(confidence)+'%')  # 显示消息
 
         h, w = img.shape[:2]
         img = QImage(img, w, h, QImage.Format_RGB888)
@@ -122,11 +126,27 @@ class MyWindow(QMainWindow):
         self.price_label.setText("金额：")
 
 
-def main():
-    app = QApplication(sys.argv)
-    window = MyWindow()
-    sys.exit(app.exec_())
+def arg_parse():
+    """
+    Parse arguements to the detect module
+
+    """
+
+    parser = argparse.ArgumentParser(description='Food Recognition System')
+
+    parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
+                        help="Your config file path", type=str)
+
+    parser.add_argument("--weight", "-w", dest='weight', default="weights/frs_cnn.pth",
+                        help="Path of model weight", type=str)
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    main()
+    args = arg_parse()
+    weight_path = args.weight
+    cfg = parse_cfg(args.cfg)
+
+    app = QApplication(sys.argv)
+    window = MyWindow(weight_path, cfg)
+    sys.exit(app.exec_())
