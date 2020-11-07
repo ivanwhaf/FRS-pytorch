@@ -17,6 +17,7 @@ def build_model(weight_path, cfg):
         model = eval(model_name)(nb_class)
     elif model_name == 'ResNet':
         model = resnet.resnet50(pretrained=False)
+        
     # load pretrained model
     if weight_path and weight_path != '':
         model.load_state_dict(torch.load(weight_path))

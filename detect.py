@@ -172,10 +172,9 @@ def arg_parse():
 
 if __name__ == "__main__":
     args = arg_parse()
-    weight_path = args.weight
-    source = args.source
+    weight_path, cfg_path, source = args.weight, args.cfg, args.source
 
-    cfg = parse_cfg(args.cfg)
+    cfg = parse_cfg(cfg_path)
     input_size = int(cfg['input_size'])
 
     model = build_model(weight_path, cfg)

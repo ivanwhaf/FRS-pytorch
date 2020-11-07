@@ -1,7 +1,7 @@
 # FRS-pytorch
 Food Recognition System using pytorch deep learning framwork
-* Deep Learning based food recognition system,using `Pytorch` deep learning framwork
-* Also can be transplanted to other platforms like `Raspberry Pi`
+* Deep Learning based food recognition system, using `Pytorch` deep learning framwork
+* This project can be also transplanted to other platforms like `Raspberry Pi`
 
 # Demo
 ## 1.Run demo directly
@@ -14,16 +14,16 @@ $ python cam_demo.py
 detect.py runs inference on a variety of sources, cd your project path and type:
 ```bash
 $ python detect.py -c cfg/frs.cfg  -w weights/frs_cnn.pth --source 0  # webcam
-                                                                  file.jpg  # image 
-                                                                  file.mp4  # video
-                                                                  path/*.jpg # path of image
-                                                                  path/*.mp4 # path of video           
+                                                                   file.jpg  # image 
+                                                                   file.mp4  # video
+                                                                   path/*.jpg # path of image
+                                                                   path/*.mp4 # path of video           
 ```
 
 # Usage
 ## Preparation
 * 1.Create an empty folder (in this project was `dataset` folder) as your dataset folder
-* 2.Prepare your own datasets, or you can run spiders`spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
+* 2.Prepare your own datasets, or you can run spiders `spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
 * 3.Move your raw image data into dataset folder, dataset folder contain several child folders, each
 child folder represents each class, for example your dataset folder should be like this:
 ```
@@ -39,10 +39,9 @@ dataset/
 ```
 
 ## Train
-* 1.Create a empty config file `xxx.cfg` in cfg directory(this repo is *cfg/frs.cfg*), then imitate `cfg/frs.cfg` editing customized config file, set **nb_class** according to your class number (this repo nb_class=10), modify **learning rate**, **batch_size** and other hyper parameters depending on actual situations
-* 2.Choose a netowrk model in `xxx.cfg`, for example `model: ResNet`,
-you can also customize your own model in `models.py`
-* 4.Run train.py to train your own model(only when dataset was prepared):
+* 1.Create a empty config file `xxx.cfg` (xxx is your project name) in cfg directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config file. Set **nb_class** according to your class number (this repo nb_class=10), modify **learning rate**, **batch_size** and other hyper parameters depending on actual situations
+* 2.Choose a netowrk model in `models` folder, and edit model param in `frs.cfg`, for example **model: ResNet**. You can also customize your own model and add it to `models` folder
+* 3.Run `train.py` to train your own model (only when dataset was prepared):
 ```bash 
 $ python train.py --cfg cfg/frs.cfg
 ```
@@ -51,16 +50,17 @@ $ python train.py --cfg cfg/frs.cfg
 ## Caution
 * Need plotting model structure? Just install `graphviz` and `torchviz` first
 * Please screen out unqualified raw images manually when making dataset
+* Validation and test periods are among training process, see train.py for more details
 
 # Program Structure Introduction
 * cfg: contain some config files
 * data: some samples and misc files
 * dataset: your own dataset path
 * models: some network model structures
-* spiders: contain some python spiders for downloading images
+* spiders: some python spiders for downloading images
 * utils: some util and kernel files
-* visualize: save model visulization result
-* weights: save model weights
+* visualize: model visulization results
+* weights: model weights
 
 # Requirements
 Python 3.X version with all [requirements.txt](https://github.com/ivanwhaf/FRS-pytorch/blob/master/requirements.txt) dependencies installed, including `torch>=1.2`. To install run:
@@ -70,7 +70,7 @@ $ pip install -r requirements.txt
 
 # Environment
 ## PC Ⅰ
-* Windows 10
+* Ubuntu 20.04
 * Python 3.7.8
 * CUDA 10.0
 * cuDNN 7.4
@@ -83,4 +83,4 @@ $ pip install -r requirements.txt
 * CUDA 10.2
 * cuDNN 7.6
 * torch 1.6.0
-* Nvidia GTX 1060
+* Nvidia GTX 1060 3GS

@@ -63,10 +63,12 @@ def validate(model, val_loader, device, val_loss_lst, val_acc_lst):
         for data, target in val_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
+
             # add one batch loss
             criterion = nn.CrossEntropyLoss()
             val_loss += criterion(output, target)
             # val_loss += F.nll_loss(output, target, reduction='sum').item()
+
             # find index of max prob
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -91,10 +93,12 @@ def test(model, test_loader, device):
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
             output = model(data)
+
             # add one batch loss
             criterion = nn.CrossEntropyLoss()
             test_loss += criterion(output, target)
             # test_loss += F.nll_loss(output, target, reduction='sum').item()
+
             # find index of max prob
             pred = output.max(1, keepdim=True)[1]
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -134,16 +138,17 @@ def arg_parse():
 if __name__ == "__main__":
     # torch.manual_seed(0)
     args = arg_parse()
-    weight_path = args.weight
-    cfg = parse_cfg(args.cfg)
-    print('Config:', cfg)
+    weight_path, cfg_path = args.weight, args.cfg
 
     # load params from config
+    cfg = parse_cfg(cfg_path)
+    print('Config:', cfg)
     dataset_path = cfg['dataset']
     nb_class, input_size = int(cfg['nb_class']), int(cfg['input_size'])
     epochs, lr, batch_size = int(cfg['epochs']), float(
         cfg['lr']), int(cfg['batch_size'])
     save_freq = int(cfg['save_freq'])
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # load datasets
@@ -156,7 +161,8 @@ if __name__ == "__main__":
 
     # load model
     net = build_model(weight_path, cfg).to(device)
-
+    print('Model successfully loaded!')
+    
     # plot model structure
     graph = make_dot(net(torch.rand(1, 3, input_size, input_size).cuda()),
                      params=dict(net.named_parameters()))

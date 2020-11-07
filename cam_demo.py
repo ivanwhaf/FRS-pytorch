@@ -59,6 +59,7 @@ class MyWindow(QMainWindow):
         self.cfg = cfg
         self.model = build_model(
             weight_path, self.cfg)
+        print('Model successfully loaded!')
         self.prices = load_prices('cfg/prices.cfg')
 
         # camera init
@@ -144,8 +145,8 @@ def arg_parse():
 
 if __name__ == '__main__':
     args = arg_parse()
-    weight_path = args.weight
-    cfg = parse_cfg(args.cfg)
+    weight_path, cfg_path = args.weight, args.cfg
+    cfg = parse_cfg(cfg_path)
 
     app = QApplication(sys.argv)
     window = MyWindow(weight_path, cfg)
