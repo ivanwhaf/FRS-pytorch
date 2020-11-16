@@ -20,7 +20,7 @@ TEST_PROPORTION = 0.1  # proportion of test set
 # NB_PER_CLASS = 200
 
 
-def create_dataset(model, root, input_size):
+def create_dataset(mode, root, input_size):
     # Image enhancement
     transform = transforms.Compose([
         transforms.Resize((input_size, input_size)),
@@ -30,9 +30,11 @@ def create_dataset(model, root, input_size):
         transforms.ToTensor(),
         # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
     ])
-    if model == 'IMAGE_FOLDER':
+
+    if mode == 'IMAGE_FOLDER':
         dataset = ImageFolder(root=root, transform=transform)
         print(dataset.class_to_idx)
+        
         # write classes config
         with open('cfg/classes.cfg', 'w', encoding='utf-8') as f:
             for k in dataset.class_to_idx:
@@ -46,7 +48,8 @@ def create_dataset(model, root, input_size):
 
         train_dataset, val_dataset, test_dataset = random_split(
             dataset, [train_size, val_size, test_size])
-    elif model == 'MY':
+
+    elif mode == 'MY':
         train_dataset = MyDataset(root, type='train', transforms=transform)
         val_dataset = MyDataset(root, type='val', transforms=transform)
         test_dataset = MyDataset(root, type='test', transforms=transform)
@@ -54,13 +57,13 @@ def create_dataset(model, root, input_size):
     return train_dataset, val_dataset, test_dataset
 
 
-def create_dataloader(model, root, batch_size, input_size):
-    if model == 'IMAGE_FOLDER':
+def create_dataloader(mode, root, batch_size, input_size):
+    if mode == 'IMAGE_FOLDER':
         train_dataset, val_dataset, test_dataset = create_dataset(
-            model='IMAGE_FOLDER', root=root, input_size=input_size)
-    elif model == 'MY':
+            mode='IMAGE_FOLDER', root=root, input_size=input_size)
+    elif mode == 'MY':
         train_dataset, val_dataset, test_dataset = create_dataset(
-            model='MY', root=root, input_size=input_size)
+            mode='MY', root=root, input_size=input_size)
 
     train_loader = DataLoader(
         train_dataset, batch_size=batch_size, shuffle=True)

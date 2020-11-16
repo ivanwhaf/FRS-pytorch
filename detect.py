@@ -1,3 +1,4 @@
+import os
 import argparse
 import cv2
 from torchvision import transforms
@@ -24,7 +25,7 @@ def predict_img(img, model, input_size):
 
     transform = transforms.Compose([
         transforms.Resize((input_size, input_size)),
-        transforms.ToTensor(),
+        transforms.ToTensor()
         # transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
     ])
     img = transform(img)
@@ -75,7 +76,7 @@ def predict_class_name_and_confidence(img, model, input_size):
     return class_name, confidence
 
 
-def predict_and_show_one_img(img, model, input_size):
+def predict_and_show_one_img(img, model, input_size, output):
     """get model output of one image
 
     Args:
@@ -84,6 +85,7 @@ def predict_and_show_one_img(img, model, input_size):
     Returns:
         class_name: class name
         confidence: class confidence
+        img: predicted img
     """
     class_name, confidence = predict_class_name_and_confidence(
         img, model, input_size)
@@ -97,18 +99,42 @@ def predict_and_show_one_img(img, model, input_size):
     img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
     # cv2.namedWindow('img', 0)
-    # cv2.resizeWindow('img',window_width,window_height)
+    # cv2.resizeWindow('img', window_width, window_height)
     cv2.imshow('img', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-    return class_name, confidence
+    return class_name, confidence, img
 
 
-def cv_loop(weight_path, cfg):
+def predict_one_img(img, model, input_size, output):
+    """get model output of one image
+
+    Args:
+        img: image ndarray
+        model: pytorch trained model
+    Returns:
+        class_name: class name
+        confidence: class confidence
+        img: predicted img
+    """
+    class_name, confidence = predict_class_name_and_confidence(
+        img, model, input_size)
+
+    img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(img)
+    font_text = ImageFont.truetype("data/simsun.ttc", 22, encoding="utf-8")
+    draw.text((5, 5), class_name + ' ' + str(confidence) +
+              '%', (0, 255, 0), font=font_text)
+
+    img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+
+    return class_name, confidence, img
+
+
+def cv_loop(weight_path, cfg, input_size):
     # loop get camera frame and show on window
     model = build_model(weight_path, cfg)
-    input_size = int(cfg['input_size'])
 
     cap = cv2.VideoCapture(0)
     cap.set(3, CAM_WIDTH)
@@ -152,39 +178,52 @@ def arg_parse():
 
     parser = argparse.ArgumentParser(description='Food Recognition System')
 
-    # parser.add_argument("--image", "-i", dest='image', default='data/samples/test.jpg',
-    #                     help="Path of image to perform detection upon", type=str)
-
-    # parser.add_argument("--video", "-v", dest='video', default='data/samples/test.mp4',
-    #                     help="Path of video to run detection upon", type=str)
-
     parser.add_argument("--weight", "-w", dest='weight', default="weights/frs_cnn.pth",
                         help="Path of model weight", type=str)
 
     parser.add_argument("--source", "-s", dest='source', default="data/samples/test.jpg",
-                        help="Path of your input file source,0 for webcam", type=str)
+                        help="Path of your input file source, 0 for webcam", type=str)
+
+    parser.add_argument('--output', "-o", dest='output', default='output',
+                        help='Output folder', type=str)
 
     parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
                         help="Your config file path", type=str)
+
+    parser.add_argument("--input_size", "-i", dest='input_size', default=224,
+                        help="Image input size", type=int)
 
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = arg_parse()
-    weight_path, cfg_path, source = args.weight, args.cfg, args.source
+    weight_path, cfg_path, source, output, input_size = args.weight, args.cfg, args.source, args.output, args.input_size
 
+    # load configs from file
     cfg = parse_cfg(cfg_path)
-    input_size = int(cfg['input_size'])
 
+    # load model
     model = build_model(weight_path, cfg)
     print('Model successfully loaded!')
 
+    # create output dir
+    if not os.path.exists(output):
+        os.makedirs(output)
+
+    # image
     if source.split('.')[-1] in ['jpg', 'png', 'jpeg', 'bmp', 'tif', 'tiff', 'gif']:
         img = cv2.imread(source)
-        class_name, confidence = predict_and_show_one_img(
-            img, model, input_size)
+        img_name = os.path.basename(source)
+        class_name, confidence, img = predict_and_show_one_img(
+            img, model, input_size, output)
+
+        # save output img
+        print(os.path.join(output, source))
+        cv2.imwrite(os.path.join(output, img_name), img)
         print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+
+    # video
     elif source.split('.')[-1] in ['mp4', 'avi', 'mkv', 'flv', 'rmvb', 'mov', 'rm']:
         cap = cv2.VideoCapture(source)
         while cap.isOpened():
@@ -211,6 +250,8 @@ if __name__ == "__main__":
                 break
         cap.release()
         cv2.destroyAllWindows()
+
+    # webcam
     elif source == '0':
         cap = cv2.VideoCapture(0)
         cap.set(3, CAM_WIDTH)
@@ -242,5 +283,17 @@ if __name__ == "__main__":
                 break
         cap.release()
         cv2.destroyAllWindows()
-    else:
-        print('your --source value not correct!')
+
+    # folder
+    elif source == source.split('.')[-1]:
+        imgs = os.listdir(source)
+        for img_name in imgs:
+            # img = cv2.imread(os.path.join(source, img_name))
+            img = cv2.imdecode(np.fromfile(os.path.join(
+                source, img_name), dtype=np.uint8), cv2.IMREAD_COLOR)
+            class_name, confidence, img = predict_one_img(
+                img, model, input_size, output)
+            print(img_name)
+            print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+            # save output img
+            cv2.imwrite(os.path.join(output, img_name), img)

@@ -138,14 +138,14 @@ def arg_parse():
     parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
                         help="Your config file path", type=str)
 
-    parser.add_argument("--weight", "-w", dest='weight', default="weights/frs_cnn.pth",
+    parser.add_argument("--weights", "-w", dest='weights', default="weights/frs_cnn.pth",
                         help="Path of model weight", type=str)
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = arg_parse()
-    weight_path, cfg_path = args.weight, args.cfg
+    weight_path, cfg_path = args.weights, args.cfg
     cfg = parse_cfg(cfg_path)
 
     app = QApplication(sys.argv)

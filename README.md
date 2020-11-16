@@ -23,7 +23,7 @@ $ python detect.py -c cfg/frs.cfg  -w weights/frs_cnn.pth --source 0  # webcam
 # Usage
 ## Preparation
 * 1.Create an empty folder (in this project was `dataset` folder) as your dataset folder
-* 2.Prepare your own datasets, or you can run spiders `spider_baidu.py` and `spider_douguo.py` to crawl raw image data from the internet
+* 2.Prepare your own datasets, or you can run spiders `spider_baidu.py` and `spider_douguo.py` (in utils folder) to crawl raw image data from the internet
 * 3.Move your raw image data into dataset folder, dataset folder contain several child folders, each
 child folder represents each class, for example your dataset folder should be like this:
 ```
@@ -39,13 +39,14 @@ dataset/
 ```
 
 ## Train
-* 1.Create a empty config file `xxx.cfg` (xxx is your project name) in cfg directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config file. Set **nb_class** according to your class number (this repo nb_class=10), modify **learning rate**, **batch_size** and other hyper parameters depending on actual situations
+* 1.Create an empty config file `xxx.cfg` (xxx is your project name) in cfg directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config. Set **nb_class** according to your class number (this repo nb_class=10), set **dataset** as your dataset path, set **input_size** as your image input size (this repo default input_size=224)
 * 2.Choose a netowrk model in `models` folder, and edit model param in `frs.cfg`, for example **model: ResNet**. You can also customize your own model and add it to `models` folder
-* 3.Run `train.py` to train your own model (only when dataset was prepared):
+* 3.Entering `train.py` to find argparse part, editing **epochs**, **learning rate**, **batch_size**, **input_size** and other hyper parameters depending on actual situations
+* 4.Run `train.py` to train your own model (only when dataset was prepared):
 ```bash 
 $ python train.py --cfg cfg/frs.cfg
 ```
-![image](https://github.com/ivanwhaf/FRS-pytorch/blob/master/visualize/batch0.png)
+![image](https://github.com/ivanwhaf/FRS-pytorch/blob/master/data/batch0.png)
 
 ## Caution
 * Need plotting model structure? Just install `graphviz` and `torchviz` first
@@ -59,7 +60,7 @@ $ python train.py --cfg cfg/frs.cfg
 * models: some network model structures
 * spiders: some python spiders for downloading images
 * utils: some util and kernel files
-* visualize: model visulization results
+* output: output file folder
 * weights: model weights
 
 # Requirements
