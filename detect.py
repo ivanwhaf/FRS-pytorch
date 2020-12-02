@@ -1,4 +1,5 @@
 import os
+import shutil
 import argparse
 import cv2
 from torchvision import transforms
@@ -76,8 +77,8 @@ def predict_class_name_and_confidence(img, model, input_size):
     return class_name, confidence
 
 
-def predict_and_show_one_img(img, model, input_size, output):
-    """get model output of one image
+def predict_and_show_img(img, model, input_size):
+    """get model output of one image and show
 
     Args:
         img: image ndarray
@@ -107,8 +108,8 @@ def predict_and_show_one_img(img, model, input_size, output):
     return class_name, confidence, img
 
 
-def predict_one_img(img, model, input_size, output):
-    """get model output of one image
+def predict_and_draw_img(img, model, input_size):
+    """get model output of one image and draw
 
     Args:
         img: image ndarray
@@ -121,6 +122,7 @@ def predict_one_img(img, model, input_size, output):
     class_name, confidence = predict_class_name_and_confidence(
         img, model, input_size)
 
+    # draw predict
     img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
     font_text = ImageFont.truetype("data/simsun.ttc", 22, encoding="utf-8")
@@ -215,7 +217,7 @@ if __name__ == "__main__":
     if source.split('.')[-1] in ['jpg', 'png', 'jpeg', 'bmp', 'tif', 'tiff', 'gif']:
         img = cv2.imread(source)
         img_name = os.path.basename(source)
-        class_name, confidence, img = predict_and_show_one_img(
+        class_name, confidence, img = predict_and_show_img(
             img, model, input_size, output)
 
         # save output img
@@ -286,13 +288,20 @@ if __name__ == "__main__":
 
     # folder
     elif source == source.split('.')[-1]:
+        # create output folder
+        output = os.path.join(output, source.split('/')[-1])
+        if os.path.exists(output):
+            shutil.rmtree(output)
+            # os.removedirs(output)
+        os.makedirs(output)
+
         imgs = os.listdir(source)
         for img_name in imgs:
             # img = cv2.imread(os.path.join(source, img_name))
             img = cv2.imdecode(np.fromfile(os.path.join(
                 source, img_name), dtype=np.uint8), cv2.IMREAD_COLOR)
-            class_name, confidence, img = predict_one_img(
-                img, model, input_size, output)
+            class_name, confidence, img = predict_and_draw_img(
+                img, model, input_size)
             print(img_name)
             print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
             # save output img
