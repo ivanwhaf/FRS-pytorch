@@ -1,11 +1,11 @@
 # FRS-pytorch
-Food Recognition System using pytorch deep learning framwork
-* Deep Learning based food recognition system, using `Pytorch` deep learning framwork
+Food Recognition System using pytorch deep learning framework
+* Deep Learning based food recognition system, using `Pytorch` deep learning framework
 * This project can be also transplanted to other platforms like `Raspberry Pi`
 
 # Demo
 ## 1.Run demo directly
-cam_demo.py runs to show a UI and recongnize the food
+cam_demo.py runs to show a UI and recognize the food
 ```bash
 $ python cam_demo.py
 ```
@@ -40,7 +40,7 @@ dataset/
 
 ## Train
 * 1.Create an empty config file `xxx.cfg` (xxx is your project name) in cfg directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config. Set **nb_class** according to your class number (this repo nb_class=10), set **dataset** as your dataset path, set **input_size** as your image input size (this repo default input_size=224)
-* 2.Choose a netowrk model in `models` folder, and edit model param in `frs.cfg`, for example **model: ResNet**. You can also customize your own model and add it to `models` folder
+* 2.Choose a network model in `models` folder, and edit model param in `frs.cfg`, for example **model: ResNet**. You can also customize your own model and add it to `models` folder
 * 3.Entering `train.py` to find argparse part, editing **epochs**, **learning rate**, **batch_size**, **input_size** and other hyper parameters depending on actual situations
 * 4.Run `train.py` to train your own model (only when dataset was prepared):
 ```bash 
