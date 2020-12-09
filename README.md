@@ -4,13 +4,13 @@ Food Recognition System using pytorch deep learning framwork
 * This project can be also transplanted to other platforms like `Raspberry Pi`
 
 # Demo
-## 1.Run demo directly
-cam_demo.py runs to show a UI and recongnize the food
+## 1. Run demo directly
+cam_demo.py runs to show a UI and recongnize the food:
 ```bash
 $ python cam_demo.py
 ```
 
-## 2.Run in command line
+## 2. Run in command line
 detect.py runs inference on a variety of sources, cd your project path and type:
 ```bash
 $ python detect.py -c cfg/frs.cfg  -w weights/frs_cnn.pth --source 0  # webcam
@@ -22,27 +22,31 @@ $ python detect.py -c cfg/frs.cfg  -w weights/frs_cnn.pth --source 0  # webcam
 
 # Usage
 ## Preparation
-* 1.Create an empty folder (in this project was `dataset` folder) as your dataset folder
-* 2.Prepare your own datasets, or you can run spiders `spider_baidu.py` and `spider_douguo.py` (in utils folder) to crawl raw image data from the internet
-* 3.Move your raw image data into dataset folder, dataset folder contain several child folders, each
-child folder represents each class, for example your dataset folder should be like this:
+* 1. Create an empty folder (this demo is `dataset` folder) as your dataset folder
+* 2. Prepare your own image dataset, or you can run spiders `spider_baidu.py` and `spider_douguo.py` (in utils folder) to crawl raw image from the internet
+* 3. Move your raw image data into dataset folder, dataset folder contain several subfolders, each
+subfolder represents each class, for example your dataset folder should be like this:
 ```
 dataset/
-  ├──tomtato
+  ├──tomtato/
   |   ├──001.png
   |   ├──002.png
   |   └──003.jpg
-  └──potato  
+  └──potato/
       ├──001.png
       ├──002.png
       └──003.jpg
 ```
 
-## Train
-* 1.Create an empty config file `xxx.cfg` (xxx is your project name) in cfg directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config. Set **nb_class** according to your class number (this repo nb_class=10), set **dataset** as your dataset path, set **input_size** as your image input size (this repo default input_size=224)
-* 2.Choose a netowrk model in `models` folder, and edit model param in `frs.cfg`, for example **model: ResNet**. You can also customize your own model and add it to `models` folder
-* 3.Entering `train.py` to find argparse part, editing **epochs**, **learning rate**, **batch_size**, **input_size** and other hyper parameters depending on actual situations
-* 4.Run `train.py` to train your own model (only when dataset was prepared):
+## Training
+### 1. Create an empty config file
+Create an empty config file `xxx.cfg` (xxx is your project name) in `cfg` directory (this repo is *cfg/frs.cfg*), then imitate `frs.cfg` editing customized config. Set **nb_class** according to your class number (this repo nb_class=10), set **dataset** as your dataset path, set **input_size** as your image input size (this repo input_size=224)
+### 2. Choose a netowrk model
+Choose a netowrk model in `models` folder, and edit model paramaters in `frs.cfg`, for example **model: ResNet18**. You can also customize your own model and add it to `models` folder, don't forget modify function `build_model()` in `model.py`
+### 3. Modify hyper parameters
+Entering `train.py` and find argparse part, editing **epochs**, **learning_rate**, **batch_size**, **input_size** and other hyper parameters depending on actual situations
+### 4. Train
+Run `train.py` to train your own model (only when dataset was prepared):
 ```bash 
 $ python train.py --cfg cfg/frs.cfg
 ```
@@ -51,10 +55,10 @@ $ python train.py --cfg cfg/frs.cfg
 ## Caution
 * Need plotting model structure? Just install `graphviz` and `torchviz` first
 * Please screen out unqualified raw images manually when making dataset
-* Validation and test periods are among training process, see train.py for more details
+* Validation and test periods are among training process, please see train.py for more details
 
 # Program Structure Introduction
-* cfg: contain some config files
+* cfg: some config files
 * data: some samples and misc files
 * dataset: your own dataset path
 * models: some network model structures
@@ -71,12 +75,12 @@ $ pip install -r requirements.txt
 
 # Environment
 ## PC Ⅰ
-* Ubuntu 20.04
-* Python 3.7.8
-* CUDA 10.0
-* cuDNN 7.4
-* torch 1.2.0
-* Nvidia MX350 2G
+* Windows 10
+* Python 3.8.6
+* CUDA 10.1
+* cuDNN 7.6
+* torch 1.7.0
+* Nvidia GTX 1080Ti 11G
 
 ## PC Ⅱ
 * Windows 10
@@ -84,4 +88,12 @@ $ pip install -r requirements.txt
 * CUDA 10.2
 * cuDNN 7.6
 * torch 1.6.0
-* Nvidia GTX 1060 3GS
+* Nvidia GTX 1060 3G
+
+## PC Ⅲ
+* Ubuntu 20.04
+* Python 3.7.8
+* CUDA 10.0
+* cuDNN 7.4
+* torch 1.2.0
+* Nvidia MX350 2G

@@ -180,7 +180,7 @@ def arg_parse():
 
     parser = argparse.ArgumentParser(description='Food Recognition System')
 
-    parser.add_argument("--weight", "-w", dest='weight', default="weights/frs_cnn.pth",
+    parser.add_argument("--weights", "-w", dest='weights', default="weights/frs_cnn.pth",
                         help="Path of model weight", type=str)
 
     parser.add_argument("--source", "-s", dest='source', default="data/samples/test.jpg",
@@ -200,7 +200,7 @@ def arg_parse():
 
 if __name__ == "__main__":
     args = arg_parse()
-    weight_path, cfg_path, source, output, input_size = args.weight, args.cfg, args.source, args.output, args.input_size
+    weight_path, cfg_path, source, output, input_size = args.weights, args.cfg, args.source, args.output, args.input_size
 
     # load configs from file
     cfg = parse_cfg(cfg_path)
@@ -218,7 +218,7 @@ if __name__ == "__main__":
         img = cv2.imread(source)
         img_name = os.path.basename(source)
         class_name, confidence, img = predict_and_show_img(
-            img, model, input_size, output)
+            img, model, input_size)
 
         # save output img
         print(os.path.join(output, source))

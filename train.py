@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 from utils.datasets import create_dataloader
 from utils.util import parse_cfg
 from models import build_model
-from torchviz import make_dot
 
 
 def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_acc_lst):
@@ -21,15 +20,15 @@ def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_a
     correct = 0
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         inputs, labels = inputs.to(device), labels.to(device)
-        optimizer.zero_grad()
 
         # foward propagation
         outputs = model(inputs)
-
+        # find index of max prob
         pred = outputs.max(1, keepdim=True)[1]
         correct += pred.eq(labels.view_as(pred)).sum().item()
 
         # back propagation
+        optimizer.zero_grad()
         criterion = nn.CrossEntropyLoss()
         loss = criterion(outputs, labels)
         train_loss += loss.item()
@@ -51,15 +50,15 @@ def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_a
                   .format(epoch, batch_idx * len(inputs), len(train_loader.dataset),
                           100. * batch_idx / len(train_loader), loss.item()))
 
-    train_loss /= len(train_loader.dataset)
     # record loss and acc
+    train_loss /= len(train_loader.dataset)
     train_loss_lst.append(train_loss)
     train_acc_lst.append(correct / len(train_loader.dataset))
     return train_loss_lst, train_acc_lst
 
 
 def validate(model, val_loader, device, val_loss_lst, val_acc_lst):
-    model.eval()  # Sets the module in evaluation mode
+    model.eval()  # Set the module in evaluation mode
     val_loss = 0
     correct = 0
     # no need to calculate gradients
@@ -89,7 +88,7 @@ def validate(model, val_loader, device, val_loss_lst, val_acc_lst):
 
 
 def test(model, test_loader, device):
-    model.eval()  # Sets the module in evaluation mode
+    model.eval()  # Set the module in evaluation mode
     test_loss = 0
     correct = 0
     # no need to calculate gradients
@@ -128,17 +127,20 @@ def arg_parse():
     parser.add_argument("--weights", "-w", dest='weights', default="",
                         help="Path of pretrained weights", type=str)
 
-    parser.add_argument("--output", "-o", dest='output', default="output",
+    parser.add_argument("--output", "-out", dest='output', default="output",
                         help="Path of output files", type=str)
 
     parser.add_argument("--epochs", "-e", dest='epochs', default=200,
                         help="Training epochs", type=int)
 
-    parser.add_argument("--lr", "-lr", dest='lr', default=0.005,
+    parser.add_argument("--lr", "-lr", dest='learning_rate', default=0.005,
                         help="Training learning rate", type=float)
 
     parser.add_argument("--batch_size", "-b", dest='batch_size', default=32,
                         help="Training batch size", type=int)
+
+    parser.add_argument("--optimizer", "-opt", dest='optimizer', default="SGD",
+                        help="Training optimizer", type=str)
 
     parser.add_argument("--input_size", "-i", dest='input_size', default=224,
                         help="Image input size", type=int)
@@ -151,8 +153,8 @@ def arg_parse():
 
 if __name__ == "__main__":
     args = arg_parse()
-    weight_path, cfg_path, output_path = args.weights, args.cfg, args.output
-    epochs, lr, batch_size, input_size, save_freq = args.epochs, args.lr, args.batch_size, args.input_size, args.save_freq
+    weight_path, cfg_path, output_path, save_freq = args.weights, args.cfg, args.output, args.save_freq
+    epochs, lr, batch_size, optimizer_cfg, input_size = args.epochs, args.learning_rate, args.batch_size, args.optimizer, args.input_size
 
     # load configs from config
     cfg = parse_cfg(cfg_path)
@@ -170,12 +172,16 @@ if __name__ == "__main__":
     print('Model successfully loaded!')
 
     # plot model structure
+    # from torchviz import make_dot
     # graph = make_dot(model(torch.rand(1, 3, input_size, input_size).cuda()),
     #                  params=dict(model.named_parameters()))
     # graph.render('model_structure', './', cleanup=True, format='png')
 
-    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
-    optimizer = optim.Adam(model.parameters(), lr=lr)
+    # select optimizer
+    if optimizer_cfg == 'Adam':
+        optimizer = optim.Adam(model.parameters(), lr=lr)
+    elif optimizer_cfg == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
     # create output file folder
     start = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
@@ -185,14 +191,14 @@ if __name__ == "__main__":
     train_loss_lst, val_loss_lst = [], []
     train_acc_lst, val_acc_lst = [], []
 
-    # train
+    # train, validate, test
     for epoch in range(epochs):
         train_loss_lst, train_acc_lst = train(model, train_loader, optimizer,
                                               epoch, device, train_loss_lst, train_acc_lst)
         val_loss_lst, val_acc_lst = validate(
             model, val_loader, device, val_loss_lst, val_acc_lst)
 
-        # save model weights every save_freq epoch
+        # save model weights every 'save_freq' epoch
         if epoch % save_freq == 0:
             torch.save(model.state_dict(), os.path.join(
                 output_path, start, 'epoch'+str(epoch)+'.pth'))
@@ -213,5 +219,6 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(output_path, start, now + '.jpg'))
     plt.show()
 
-    # save model
-    torch.save(model.state_dict(), os.path.join(output_path, start, 'last.pth'))
+    # save last model
+    torch.save(model.state_dict(), os.path.join(
+        output_path, start, 'last.pth'))

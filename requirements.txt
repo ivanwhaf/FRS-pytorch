@@ -8,4 +8,4 @@ matplotlib
 
 # ====optional====
 pyqt5
-torchviz
+# torchviz

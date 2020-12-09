@@ -15,8 +15,10 @@ def build_model(weight_path, cfg):
         model = eval(model_name)(nb_class)
     elif model_name == 'GoogLeNet':
         model = eval(model_name)(nb_class)
-    elif model_name == 'ResNet':
-        model = resnet.resnet50(pretrained=False)
+    elif model_name == 'ResNet34':
+        model = resnet.resnet34(pretrained=False)
+    elif model_name == 'ResNet18':
+        model = resnet.resnet18(pretrained=False)
 
     # load pretrained model
     if weight_path and weight_path != '':

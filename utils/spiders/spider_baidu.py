@@ -3,7 +3,7 @@
 import os
 import json
 import urllib
-import requests  # install
+import requests
 
 width, height = '', ''
 page = 10  # 需要下载的页数

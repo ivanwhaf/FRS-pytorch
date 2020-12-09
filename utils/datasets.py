@@ -10,14 +10,10 @@ from torchvision import transforms
 from .util import load_classes
 from PIL import Image
 
-# Common param
+# Common params
 TRAIN_PROPORTION = 0.8  # proportion of train set
 VAL_PROPORTION = 0.1  # proportion of valid set
 TEST_PROPORTION = 0.1  # proportion of test set
-
-# MyDataset param
-# NB_CLASS = 5
-# NB_PER_CLASS = 200
 
 
 def create_dataset(mode, root, input_size):
@@ -34,7 +30,7 @@ def create_dataset(mode, root, input_size):
     if mode == 'IMAGE_FOLDER':
         dataset = ImageFolder(root=root, transform=transform)
         print(dataset.class_to_idx)
-        
+
         # write classes config
         with open('cfg/classes.cfg', 'w', encoding='utf-8') as f:
             for k in dataset.class_to_idx:
@@ -74,6 +70,10 @@ def create_dataloader(mode, root, batch_size, input_size):
 
     return train_loader, val_loader, test_loader
 
+
+# MyDataset params
+# NB_CLASS = 5
+# NB_PER_CLASS = 200
 
 class MyDataset(Dataset):
     def __init__(self, root, type='train', transforms=None):

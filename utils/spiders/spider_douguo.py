@@ -2,8 +2,8 @@
 # @LastEdit: 2020/9/4
 import os
 from urllib import parse
-import requests  # install
-from bs4 import BeautifulSoup as bs  # install
+import requests
+from bs4 import BeautifulSoup as bs
 
 # https://www.douguo.com/search/recipe/%E7%B3%96%E9%86%8B%E6%8E%92%E9%AA%A8/0/0
 douguo_api = 'https://www.douguo.com/search/recipe/'
