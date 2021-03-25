@@ -1,15 +1,27 @@
+import argparse
 import os
 import shutil
-import argparse
-import cv2
-from torchvision import transforms
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
-from utils.util import load_classes, parse_cfg
-from models import build_model
 
-# camera shape
-CAM_WIDTH, CAM_HEIGHT = 848, 480
+import cv2
+import numpy as np
+import torch.nn.functional as F
+from PIL import Image, ImageDraw, ImageFont
+from torchvision import transforms
+
+from models import build_model
+from utils import load_classes, parse_cfg
+
+parser = argparse.ArgumentParser(description='Food Recognition System')
+parser.add_argument("--weights", "-w", help="Path of model weight", type=str, default="weights/frs_cnn.pth")
+parser.add_argument("--source", "-s", help="Path of your input file source, 0 for webcam", type=str,
+                    default="data/samples/test.jpg")
+parser.add_argument('--output', "-o", help='Output folder', type=str, default='output')
+parser.add_argument("--cfg", "-c", help="Your config file path", type=str, default="cfg/frs.cfg")
+parser.add_argument("--input_size", "-i", help="Image input size", type=int, default=224)
+parser.add_argument("--cam_width", "-cw", help="Camera width", type=int, default=848)
+parser.add_argument("--cam_height", "-ch", help="Camera height", type=int, default=480)
+parser.add_argument("--font_type", "-ft", help="Path of font type", type=str, default="data/simsun.ttc")
+args = parser.parse_args()
 
 
 def predict_img(img, model, input_size):
@@ -33,6 +45,7 @@ def predict_img(img, model, input_size):
     img.unsqueeze_(0)
 
     output = model(img)
+    output = F.softmax(output, dim=1)
     return output
 
 
@@ -44,15 +57,12 @@ def predict_class_idx_and_confidence(img, model, input_size):
         model: pytorch model
     Returns:
         class_: class index
-        confidence: class confidence
+        confidence: class confidence 0~1
     """
     # call base prediction function
     output = predict_img(img, model, input_size)
-    class_idx = output.max(1)[1]
-    confidence = output.max(1)[0]
-
-    # confidence percentage,save three decimal places
-    # confidence = '%.2f' % (confidence * 100)
+    confidence = output.max(1)[0].item()
+    class_idx = output.max(1)[1].item()
 
     return class_idx, confidence
 
@@ -66,6 +76,7 @@ def predict_class_name_and_confidence(img, model, input_size):
     Args:
         img: image to predict
         model: pytorch model
+        input_size: image input size
     Returns:
         class_name: class index
         confidence: class confidence
@@ -83,24 +94,22 @@ def predict_and_show_img(img, model, input_size):
     Args:
         img: image ndarray
         model: pytorch trained model
+        input_size: image input size
     Returns:
         class_name: class name
         confidence: class confidence
-        img: predicted img
+        img: predicted and drawn img
     """
     class_name, confidence = predict_class_name_and_confidence(
         img, model, input_size)
 
     img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    font_text = ImageFont.truetype("data/simsun.ttc", 22, encoding="utf-8")
-    draw.text((5, 5), class_name + ' ' + str(confidence) +
-              '%', (0, 255, 0), font=font_text)
+    font_text = ImageFont.truetype(args.font_type, 22, encoding="utf-8")
+    draw.text((5, 5), class_name + ' ' + str('%.2f' % (confidence * 100)) + '%', (0, 255, 0), font=font_text)
 
     img = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
-    # cv2.namedWindow('img', 0)
-    # cv2.resizeWindow('img', window_width, window_height)
     cv2.imshow('img', img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
@@ -114,6 +123,7 @@ def predict_and_draw_img(img, model, input_size):
     Args:
         img: image ndarray
         model: pytorch trained model
+        input_size: image input size
     Returns:
         class_name: class name
         confidence: class confidence
@@ -125,7 +135,7 @@ def predict_and_draw_img(img, model, input_size):
     # draw predict
     img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img)
-    font_text = ImageFont.truetype("data/simsun.ttc", 22, encoding="utf-8")
+    font_text = ImageFont.truetype(args.font_type, 22, encoding="utf-8")
     draw.text((5, 5), class_name + ' ' + str(confidence) +
               '%', (0, 255, 0), font=font_text)
 
@@ -139,8 +149,8 @@ def cv_loop(weight_path, cfg, input_size):
     model = build_model(weight_path, cfg)
 
     cap = cv2.VideoCapture(0)
-    cap.set(3, CAM_WIDTH)
-    cap.set(4, CAM_HEIGHT)
+    cap.set(3, args.cam_width)
+    cap.set(4, args.cam_height)
 
     # main loop
     while True:
@@ -148,7 +158,7 @@ def cv_loop(weight_path, cfg, input_size):
         if not ret:
             print('Camera frame load failed!')
             break
-        print('frame shape:', frame.shape)
+        print('Frame shape:', frame.shape)
 
         img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         class_name, confidence = predict_class_name_and_confidence(
@@ -156,15 +166,15 @@ def cv_loop(weight_path, cfg, input_size):
 
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         draw = ImageDraw.Draw(img)
-        font_text = ImageFont.truetype("data/simsun.ttc", 26, encoding="utf-8")
+        font_text = ImageFont.truetype(args.font_type, 26, encoding="utf-8")
         draw.text((5, 5), class_name + ' ' +
-                  str(confidence)+'%', (0, 255, 0), font=font_text)
+                  str('%.2f' % (confidence * 100)) + '%', (0, 255, 0), font=font_text)
         frame = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
-        print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+        print('Class name:', class_name, 'Confidence:', str('%.2f' % (confidence * 100)) + '%')
         # cv2.namedWindow('frame', 0)
-        cv2.resizeWindow('frame', (int(cap.get(3)), int(cap.get(4))))
-        cv2.imshow('frame', frame)
+        cv2.resizeWindow('Frame', (int(cap.get(3)), int(cap.get(4))))
+        cv2.imshow('Frame', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -172,34 +182,7 @@ def cv_loop(weight_path, cfg, input_size):
     cv2.destroyAllWindows()
 
 
-def arg_parse():
-    """
-    Parse arguements to the detect module
-
-    """
-
-    parser = argparse.ArgumentParser(description='Food Recognition System')
-
-    parser.add_argument("--weights", "-w", dest='weights', default="weights/frs_cnn.pth",
-                        help="Path of model weight", type=str)
-
-    parser.add_argument("--source", "-s", dest='source', default="data/samples/test.jpg",
-                        help="Path of your input file source, 0 for webcam", type=str)
-
-    parser.add_argument('--output', "-o", dest='output', default='output',
-                        help='Output folder', type=str)
-
-    parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
-                        help="Your config file path", type=str)
-
-    parser.add_argument("--input_size", "-i", dest='input_size', default=224,
-                        help="Image input size", type=int)
-
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
-    args = arg_parse()
     weight_path, cfg_path, source, output, input_size = args.weights, args.cfg, args.source, args.output, args.input_size
 
     # load configs from file
@@ -223,7 +206,7 @@ if __name__ == "__main__":
         # save output img
         print(os.path.join(output, source))
         cv2.imwrite(os.path.join(output, img_name), img)
-        print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+        print('Class name:', class_name, 'Confidence:', str('%.2f' % (confidence * 100)) + '%')
 
     # video
     elif source.split('.')[-1] in ['mp4', 'avi', 'mkv', 'flv', 'rmvb', 'mov', 'rm']:
@@ -240,14 +223,13 @@ if __name__ == "__main__":
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img)
             font_text = ImageFont.truetype(
-                "data/simsun.ttc", 26, encoding="utf-8")
-            draw.text((5, 5), class_name+' ' + str(confidence) +
-                      '%', (0, 255, 0), font=font_text)
+                args.font_type, 26, encoding="utf-8")
+            draw.text((5, 5), class_name + ' ' + str('%.2f' % (confidence * 100)) + '%', (0, 255, 0), font=font_text)
             frame = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
-            print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
-            cv2.resizeWindow('frame', (int(cap.get(3)), int(cap.get(4))))
-            cv2.imshow("frame", frame)
+            print('Class name:', class_name, 'Confidence:', str('%.2f' % (confidence * 100)) + '%')
+            cv2.resizeWindow('Frame', (int(cap.get(3)), int(cap.get(4))))
+            cv2.imshow("Frame", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
@@ -256,15 +238,17 @@ if __name__ == "__main__":
     # webcam
     elif source == '0':
         cap = cv2.VideoCapture(0)
-        cap.set(3, CAM_WIDTH)
-        cap.set(4, CAM_HEIGHT)
+        cap.set(3, args.cam_width)
+        cap.set(4, args.cam_height)
+        if not cap.isOpened():
+            print('Camera not open!')
         # main loop
         while cap.isOpened():
             ret, frame = cap.read()
             if not ret:
                 print('Camera frame load failed!')
                 break
-            print('frame shape:', frame.shape)
+            print('Frame shape:', frame.shape)
 
             img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             class_name, confidence = predict_class_name_and_confidence(
@@ -273,14 +257,14 @@ if __name__ == "__main__":
             img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             draw = ImageDraw.Draw(img)
             font_text = ImageFont.truetype(
-                "data/simsun.ttc", 26, encoding="utf-8")
+                args.font_type, 26, encoding="utf-8")
             draw.text((5, 5), class_name + ' ' +
-                      str(confidence)+'%', (0, 255, 0), font=font_text)
+                      str('%.2f' % (confidence * 100)) + '%', (0, 255, 0), font=font_text)
             frame = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
-            print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
-            cv2.resizeWindow('frame', (int(cap.get(3)), int(cap.get(4))))
-            cv2.imshow('frame', frame)
+            print('Class name:', class_name, 'Confidence:', str('%.2f' % (confidence * 100)) + '%')
+            cv2.resizeWindow('Frame', (int(cap.get(3)), int(cap.get(4))))
+            cv2.imshow('Frame', frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
         cap.release()
@@ -303,6 +287,6 @@ if __name__ == "__main__":
             class_name, confidence, img = predict_and_draw_img(
                 img, model, input_size)
             print(img_name)
-            print('Class name:', class_name, 'Confidence:', str(confidence)+'%')
+            print('Class name:', class_name, 'Confidence:', str('%.2f' % (confidence * 100)) + '%')
             # save output img
             cv2.imwrite(os.path.join(output, img_name), img)

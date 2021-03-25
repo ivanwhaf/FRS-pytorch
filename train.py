@@ -1,17 +1,33 @@
 # @Author: Ivan
 # @Time: 2020/11/16
+import argparse
 import os
 import time
-import argparse
-import torch
-from torch import nn
-import torch.optim as optim
-import torch.nn.functional as F
-from torchvision import utils
+
 import matplotlib.pyplot as plt
-from utils.datasets import create_dataloader
-from utils.util import parse_cfg
+import torch
+import torch.optim as optim
+from torch import nn
+from torchvision import utils
+
 from models import build_model
+from utils import create_dataloader
+from utils import parse_cfg
+
+parser = argparse.ArgumentParser(description='Food Recognition System')
+parser.add_argument("--cfg", "-c", help="Your config file path", type=str, default="cfg/frs.cfg")
+parser.add_argument("--weights", "-w", help="Path of pretrained weights", type=str, default="")
+parser.add_argument("--output", "-out", help="Path of output files", type=str, default="output")
+parser.add_argument("--epochs", "-e", help="Training epochs", type=int, default=100)
+parser.add_argument("--lr", "-lr", help="Training learning rate", type=float, default=0.005)
+parser.add_argument("--batch_size", "-b", help="Training batch size", type=int, default=32)
+parser.add_argument("--optimizer", "-opt", help="Training optimizer", type=str, default="SGD")
+parser.add_argument("--input_size", "-i", help="Image input size", type=int, dest='input_size', default=224)
+parser.add_argument("--train_proportion", help="train dataset proportion", type=float, default=0.8)
+parser.add_argument("--valid_proportion", help="valid dataset proportion", type=float, default=0.1)
+parser.add_argument("--test_proportion", help="test dataset proportion", type=float, default=0.1)
+parser.add_argument("--save_freq", "-s", help="Frequency of saving model", type=int, default=10)
+args = parser.parse_args()
 
 
 def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_acc_lst):
@@ -20,9 +36,8 @@ def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_a
     correct = 0
     for batch_idx, (inputs, labels) in enumerate(train_loader):
         inputs, labels = inputs.to(device), labels.to(device)
-
-        # foward propagation
         outputs = model(inputs)
+
         # find index of max prob
         pred = outputs.max(1, keepdim=True)[1]
         correct += pred.eq(labels.view_as(pred)).sum().item()
@@ -32,7 +47,6 @@ def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_a
         criterion = nn.CrossEntropyLoss()
         loss = criterion(outputs, labels)
         train_loss += loss.item()
-        # loss = F.nll_loss(outputs, labels)  # negative log likelihood loss
         loss.backward()
         optimizer.step()
 
@@ -42,10 +56,12 @@ def train(model, train_loader, optimizer, epoch, device, train_loss_lst, train_a
             inputs = inputs.cpu()  # convert to cpu
             grid = utils.make_grid(inputs)
             plt.imshow(grid.numpy().transpose((1, 2, 0)))
+            plt.savefig(os.path.join(output_path, 'batch0.png'))
             plt.show()
+            plt.close(fig)
 
         # print loss and accuracy
-        if (batch_idx+1) % 10 == 0:
+        if (batch_idx + 1) % 10 == 0:
             print('Train Epoch: {} [{}/{} ({:.1f}%)]  Loss: {:.6f}'
                   .format(epoch, batch_idx * len(inputs), len(train_loader.dataset),
                           100. * batch_idx / len(train_loader), loss.item()))
@@ -70,7 +86,6 @@ def validate(model, val_loader, device, val_loss_lst, val_acc_lst):
             # add one batch loss
             criterion = nn.CrossEntropyLoss()
             val_loss += criterion(output, target).item()
-            # val_loss += F.nll_loss(output, target, reduction='sum').item()
 
             # find index of max prob
             pred = output.max(1, keepdim=True)[1]
@@ -100,7 +115,6 @@ def test(model, test_loader, device):
             # add one batch loss
             criterion = nn.CrossEntropyLoss()
             test_loss += criterion(output, target).item()
-            # test_loss += F.nll_loss(output, target, reduction='sum').item()
 
             # find index of max prob
             pred = output.max(1, keepdim=True)[1]
@@ -113,59 +127,24 @@ def test(model, test_loader, device):
                   100. * correct / len(test_loader.dataset)))
 
 
-def arg_parse():
-    """
-    Parse arguements to the detect module
-
-    """
-
-    parser = argparse.ArgumentParser(description='Food Recognition System')
-
-    parser.add_argument("--cfg", "-c", dest='cfg', default="cfg/frs.cfg",
-                        help="Your config file path", type=str)
-
-    parser.add_argument("--weights", "-w", dest='weights', default="",
-                        help="Path of pretrained weights", type=str)
-
-    parser.add_argument("--output", "-out", dest='output', default="output",
-                        help="Path of output files", type=str)
-
-    parser.add_argument("--epochs", "-e", dest='epochs', default=200,
-                        help="Training epochs", type=int)
-
-    parser.add_argument("--lr", "-lr", dest='learning_rate', default=0.005,
-                        help="Training learning rate", type=float)
-
-    parser.add_argument("--batch_size", "-b", dest='batch_size', default=32,
-                        help="Training batch size", type=int)
-
-    parser.add_argument("--optimizer", "-opt", dest='optimizer', default="SGD",
-                        help="Training optimizer", type=str)
-
-    parser.add_argument("--input_size", "-i", dest='input_size', default=224,
-                        help="Image input size", type=int)
-
-    parser.add_argument("--save_freq", "-s", dest='save_freq', default=10,
-                        help="Frequency of saving model", type=int)
-
-    return parser.parse_args()
-
-
 if __name__ == "__main__":
-    args = arg_parse()
+    # load args
     weight_path, cfg_path, output_path, save_freq = args.weights, args.cfg, args.output, args.save_freq
-    epochs, lr, batch_size, optimizer_cfg, input_size = args.epochs, args.learning_rate, args.batch_size, args.optimizer, args.input_size
+    epochs, lr, batch_size, optimizer_cfg, input_size = args.epochs, args.lr, args.batch_size, \
+                                                        args.optimizer, args.input_size
+    train_proportion, valid_proportion, test_proportion = args.train_proportion, args.valid_proportion, args.test_proportion
 
-    # load configs from config
+    # load configs from config file
     cfg = parse_cfg(cfg_path)
     print('Config:', cfg)
-    dataset_path, nb_class = cfg['dataset'], int(cfg['nb_class'])
+    dataset_path, num_classes = cfg['dataset'], int(cfg['num_classes'])
+
+    # load dataset
+    train_loader, val_loader, test_loader = create_dataloader(
+        'MY_DATASET', dataset_path, batch_size, input_size, num_per_class=200, train_proportion=train_proportion,
+        valid_proportion=valid_proportion, test_proportion=test_proportion)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # load datasets
-    train_loader, val_loader, test_loader = create_dataloader(
-        'IMAGE_FOLDER', dataset_path, batch_size, input_size)
 
     # load model
     model = build_model(weight_path, cfg).to(device)
@@ -185,7 +164,8 @@ if __name__ == "__main__":
 
     # create output file folder
     start = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    os.makedirs(os.path.join(output_path, start))
+    output_path = os.path.join(args.output, start)
+    os.makedirs(output_path)
 
     # loss and accuracy list
     train_loss_lst, val_loss_lst = [], []
@@ -200,8 +180,7 @@ if __name__ == "__main__":
 
         # save model weights every 'save_freq' epoch
         if epoch % save_freq == 0:
-            torch.save(model.state_dict(), os.path.join(
-                output_path, start, 'epoch'+str(epoch)+'.pth'))
+            torch.save(model.state_dict(), os.path.join(output_path, 'epoch' + str(epoch) + '.pth'))
 
     test(model, test_loader, device)
 
@@ -216,9 +195,8 @@ if __name__ == "__main__":
     plt.ylabel('acc-loss')
     plt.legend(loc="upper right")
     now = time.strftime('%Y-%m-%d-%H-%M-%S', time.localtime(time.time()))
-    plt.savefig(os.path.join(output_path, start, now + '.jpg'))
+    plt.savefig(os.path.join(output_path, 'acc_loss.png'))
     plt.show()
 
     # save last model
-    torch.save(model.state_dict(), os.path.join(
-        output_path, start, 'last.pth'))
+    torch.save(model.state_dict(), os.path.join(output_path, 'last.pth'))

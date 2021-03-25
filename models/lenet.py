@@ -13,7 +13,7 @@ class LeNet(nn.Module):
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.maxpool = nn.MaxPool2d(2, 2)
         self.relu = nn.ReLU()
-        self.fc1 = nn.Linear(16*int(input_size/4-2)*int(input_size/4-2), 120)
+        self.fc1 = nn.Linear(16 * int(input_size / 4 - 2) * int(input_size / 4 - 2), 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, nb_class)
         self.softmax = nn.LogSoftmax(dim=1)
