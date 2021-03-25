@@ -1,8 +1,9 @@
 # @Author: Ivan
 # @LastEdit: 2020/9/23
-import os
 import json
+import os
 import urllib
+
 import requests
 
 width, height = '', ''
@@ -33,7 +34,7 @@ def download(lis, path, keyword):
         os.mkdir(c_path)
     for url in lis:
         r = requests.get(url, headers=headers, stream=True)
-        with open(c_path + '\\' + keyword+str(number) + '.jpg', 'wb') as f:
+        with open(c_path + '\\' + keyword + str(number) + '.jpg', 'wb') as f:
             for chunk in r.iter_content(chunk_size=32):
                 f.write(chunk)
         print(keyword, number, url, 'downloaded!')
